@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Halo Optical — Lens Inventory</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; }
+  .topbar { background: #fff; border-bottom: 1px solid #e5e5e5; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
+  .topbar-brand { font-size: 16px; font-weight: 600; }
+  .topbar-sub { font-size: 12px; color: #888; }
+  .topbar-right { font-size: 12px; color: #888; }
+  .container { max-width: 1300px; margin: 0 auto; padding: 1.5rem 2rem; }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .metric-card { background: #fff; border-radius: 10px; border: 1px solid #e8e8e8; padding: 14px 16px; }
+  .metric-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+  .metric-value { font-size: 24px; font-weight: 600; color: #1a1a1a; }
+  .metric-value.danger { color: #c0392b; }
+  .tabs-wrap { overflow-x: auto; margin-bottom: 1.5rem; }
+  .tabs { display: flex; gap: 6px; min-width: max-content; padding-bottom: 2px; }
+  .tab { padding: 7px 14px; border-radius: 8px; border: 1px solid #e0e0e0; background: #fff; font-size: 13px; cursor: pointer; color: #555; transition: all 0.15s; white-space: nowrap; }
+  .tab.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  .tab:hover:not(.active) { background: #f0f0f0; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  select, input[type="text"], input[type="number"] { font-size: 13px; padding: 7px 10px; border-radius: 8px; border: 1px solid #ddd; background: #fff; color: #1a1a1a; height: 36px; outline: none; }
+  select:focus, input:focus { border-color: #888; }
+  .brand-section { margin-bottom: 2.5rem; }
+  .brand-section-title { font-size: 15px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: #1a1a1a; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #1a1a1a; display: flex; align-items: center; justify-content: space-between; }
+  .brand-total-badge { font-size: 12px; font-weight: 400; color: #888; text-transform: none; letter-spacing: 0; }
+  .branch-brand-section { margin-bottom: 2rem; }
+  .branch-brand-title { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: #555; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: space-between; }
+  .matrix-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid #e8e8e8; background: #fff; margin-bottom: 0.5rem; }
+  .matrix-table { border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+  .matrix-table th, .matrix-table td { border: 1px solid #ebebeb; }
+  .matrix-table thead th { background: #fafafa; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; color: #555; padding: 8px 12px; text-align: center; }
+  .matrix-table thead th.corner { text-align: left; min-width: 70px; }
+  .matrix-table thead th.total-col { background: #f0f0ee; }
+  .matrix-table tbody td { text-align: center; padding: 7px 10px; min-width: 52px; }
+  .matrix-table tbody td.sph-label { background: #fafafa; font-weight: 600; font-size: 12px; text-align: left; padding: 7px 12px; color: #333; }
+  .matrix-table tbody td.total-cell { background: #f5f5f3; font-weight: 700; font-size: 13px; color: #1a1a1a; }
+  .matrix-table tfoot td { background: #f0f0ee; font-weight: 700; font-size: 12px; text-align: center; padding: 8px 10px; border-top: 2px solid #ddd; }
+  .matrix-table tfoot td.label-cell { text-align: left; padding-left: 12px; color: #555; letter-spacing: 0.3px; font-size: 11px; text-transform: uppercase; }
+  .matrix-table tfoot td.grand-total { background: #e5e5e3; font-size: 13px; }
+  .c-ok { color: #1a1a1a; }
+  .c-low { color: #e65100; font-weight: 600; }
+  .c-critical { color: #c0392b; font-weight: 700; }
+  .c-zero { color: #ccc; }
+  td.clickable { cursor: pointer; }
+  td.clickable:hover { background: #f0f8ff !important; }
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .section-title { font-size: 15px; font-weight: 600; }
+  .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
+  .filter-label { font-size: 12px; color: #888; }
+  .form-card { background: #fff; border: 1px solid #e8e8e8; border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; }
+  .form-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 14px; color: #333; }
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 11px; color: #888; margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px; }
+  .form-group input, .form-group select { width: 100%; }
+  .btn-save { padding: 8px 20px; background: #1a1a1a; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; color: #fff; font-weight: 500; }
+  .btn-save:hover { background: #333; }
+  .btn-export { padding: 7px 14px; background: #fff; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; cursor: pointer; color: #555; }
+  .btn-export:hover { background: #f5f5f5; }
+  .lens-tabs-wrap { overflow-x: auto; margin-bottom: 1.25rem; }
+  .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid #e8e8e8; background: #fff; margin-bottom: 1.5rem; }
+  .table-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 700px; }
+  .table-wrap thead tr { background: #fafafa; }
+  .table-wrap th { padding: 10px 14px; text-align: left; font-weight: 500; color: #888; border-bottom: 1px solid #e8e8e8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .table-wrap td { padding: 10px 14px; color: #1a1a1a; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+  .table-wrap tr:last-child td { border-bottom: none; }
+  .table-wrap tbody tr:hover td { background: #fafafa; }
+  .tab-transfer { background: #fff3e0 !important; color: #e65100 !important; border-color: #ffd699 !important; }
+  .tab-transfer.active { background: #e65100 !important; color: #fff !important; border-color: #e65100 !important; }
+  .lens-tabs { display: flex; gap: 6px; min-width: max-content; }
+  .lens-tab { padding: 6px 14px; border-radius: 8px; border: 1px solid #e0e0e0; background: #fff; font-size: 12px; cursor: pointer; color: #555; transition: all 0.15s; white-space: nowrap; }
+  .lens-tab.active { background: #444; color: #fff; border-color: #444; }
+  .lens-tab:hover:not(.active) { background: #f0f0f0; }
+  .brand-tabs { display: flex; gap: 6px; min-width: max-content; }
+  .brand-tab { padding: 6px 14px; border-radius: 8px; border: 1px solid #e0e0e0; background: #fff; font-size: 13px; cursor: pointer; color: #555; transition: all 0.15s; white-space: nowrap; }
+  .brand-tab.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  .brand-tab:hover:not(.active) { background: #f0f0f0; }
+  .brand-tables-row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: nowrap; }
+  .brand-tables-row .matrix-wrap { flex: 0 0 auto; }
+  .plus-table-wrap { flex: 0 0 auto; }
+  .plus-matrix { border-collapse: collapse; font-size: 12px; white-space: nowrap; border-radius: 10px; overflow: hidden; border: 1px solid #e8e8e8; background: #fff; }
+  .plus-matrix th, .plus-matrix td { border: 1px solid #ebebeb; }
+  .plus-matrix thead th { background: #fafafa; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; color: #555; padding: 8px 12px; text-align: center; }
+  .plus-matrix thead th.total-col { background: #f0f0ee; }
+  .plus-matrix tbody td { text-align: center; padding: 7px 14px; }
+  .plus-matrix tbody td.sph-label { background: #fafafa; font-weight: 600; font-size: 12px; text-align: left; padding: 7px 12px; color: #333; }
+  .plus-matrix tbody td.total-cell { background: #f5f5f3; font-weight: 700; font-size: 13px; color: #1a1a1a; }
+  .plus-matrix tfoot td { background: #f0f0ee; font-weight: 700; font-size: 12px; text-align: center; padding: 8px 10px; border-top: 2px solid #ddd; }
+  .plus-matrix tfoot td.label-cell { text-align: left; padding-left: 12px; color: #555; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .plus-matrix tfoot td.grand-total { background: #e5e5e3; font-size: 13px; }
+  .empty-note { color: #aaa; font-size: 13px; padding: 1.5rem 0; }
+  .legend { display: flex; gap: 16px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #666; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: #1a1a1a; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; }
+  .toast.show { opacity: 1; }
+
+  /* ── Branch breakdown modal ── */
+  .breakdown-modal { background: #fff; border-radius: 14px; padding: 1.5rem; width: 420px; max-width: 95vw; box-shadow: 0 8px 40px rgba(0,0,0,0.18); }
+  .breakdown-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  .breakdown-row:last-child { border-bottom: none; }
+  .breakdown-branch { font-weight: 600; color: #1a1a1a; }
+  .breakdown-qty { font-size: 15px; font-weight: 700; min-width: 40px; text-align: right; }
+  .breakdown-qty.zero { color: #ccc; font-weight: 400; }
+  .breakdown-qty.low { color: #e65100; }
+  .breakdown-qty.critical { color: #c0392b; }
+
+  /* ── Modal overlay ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 500; align-items: center; justify-content: center; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: #fff; border-radius: 14px; padding: 1.5rem; width: 360px; max-width: 95vw; box-shadow: 0 8px 40px rgba(0,0,0,0.18); }
+  .modal-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .modal-sub { font-size: 12px; color: #888; margin-bottom: 1rem; }
+  .modal-list { list-style: none; margin-bottom: 1rem; max-height: 220px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
+  .modal-list li { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  .modal-list li:last-child { border-bottom: none; }
+  .modal-list li.protected { color: #aaa; }
+  .btn-remove { background: none; border: 1px solid #e0c0c0; color: #c0392b; border-radius: 6px; padding: 2px 10px; font-size: 12px; cursor: pointer; }
+  .btn-remove:hover { background: #fdf0f0; }
+  .btn-remove:disabled { opacity: 0.3; cursor: not-allowed; }
+  .modal-add-row { display: flex; gap: 8px; }
+  .modal-add-row input { flex: 1; }
+  .btn-modal-add { padding: 7px 16px; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .btn-modal-add:hover { background: #333; }
+  .modal-footer { display: flex; justify-content: flex-end; margin-top: 1rem; }
+  .btn-modal-close { padding: 7px 18px; background: #f0f0f0; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; color: #555; }
+  .btn-modal-close:hover { background: #e0e0e0; }
+  /* ── ± manage buttons ── */
+  .btn-manage { padding: 4px 10px; border-radius: 7px; border: 1px solid #d0d0d0; background: #fff; font-size: 14px; cursor: pointer; color: #555; line-height: 1; display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; }
+  .btn-manage:hover { background: #f0f0f0; }
+  @media (max-width: 600px) { .container { padding: 1rem; } .topbar { padding: 0 1rem; } }
+</style>
+</head>
+<body>
+
+<!-- ── Login Screen ── -->
+<div id="login-screen" style="display:none;position:fixed;inset:0;background:#f5f5f3;z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#fff;padding:2.5rem;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.08);width:380px;max-width:90vw;text-align:center;">
+    <div style="font-size:22px;font-weight:700;margin-bottom:8px;color:#1a1a1a;">Halo Optical</div>
+    <div style="font-size:13px;color:#888;margin-bottom:1.8rem;">Lens Inventory System</div>
+    <button onclick="doLogin()" style="display:inline-flex;align-items:center;gap:10px;padding:10px 20px;background:#fff;border:1px solid #dadce0;border-radius:8px;font-size:14px;font-weight:500;color:#3c4043;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+      Sign in with Google
+    </button>
+    <div id="login-error" style="margin-top:1.5rem;font-size:12px;color:#c0392b;min-height:16px;"></div>
+    <div style="margin-top:2rem;font-size:11px;color:#aaa;">Only authorized Google accounts can access this system.</div>
+  </div>
+</div>
+
+<!-- ── App Container (hidden until login) ── -->
+<div id="app-container" style="display:none;">
+
+<div class="topbar">
+  <div>
+    <div class="topbar-brand">Halo Optical</div>
+    <div class="topbar-sub">Lens Inventory — Single Vision</div>
+  </div>
+  <div class="topbar-right" id="last-updated">—</div>
+  <span id="user-info" style="margin-left:1rem;white-space:nowrap;"></span>
+</div>
+
+<div class="container">
+  <div class="summary-grid" id="summary-grid"></div>
+  <div class="tabs-wrap"><div class="tabs" id="tabs"></div></div>
+
+  <!-- Overview Panel -->
+  <div class="panel active" id="panel-overview">
+    <div class="section-header">
+      <span class="section-title">All branches — stock overview</span>
+      <button class="btn-export" onclick="exportCSV()">Export CSV</button>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#c0392b"></div> Critical (≤2)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e65100"></div> Low (≤5)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#1a1a1a"></div> OK</div>
+    </div>
+    <div class="brand-tabs-wrap"><div class="brand-tabs" id="overview-brand-tabs"></div></div>
+    <div class="lens-tabs-wrap" id="overview-lens-tabs-wrap" style="display:none;"><div class="lens-tabs" id="overview-lens-tabs"></div></div>
+    <div id="overview-brands"></div>
+  </div>
+
+  <!-- Branch Panel -->
+  <div class="panel" id="panel-branch">
+    <div class="section-header">
+      <span class="section-title" id="branch-title">Branch</span>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#c0392b"></div> Critical (≤2)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e65100"></div> Low (≤5)</div>
+      <div class="legend-item" style="color:#888;">Click any cell to adjust quantity</div>
+    </div>
+    <div class="brand-tabs-wrap"><div class="brand-tabs" id="branch-brand-tabs"></div></div>
+    <div class="lens-tabs-wrap" id="branch-lens-tabs-wrap" style="display:none;"><div class="lens-tabs" id="branch-lens-tabs"></div></div>
+    <div id="branch-matrices"></div>
+    <div class="form-card">
+      <h3>Add / update lens entry</h3>
+      <div class="form-grid">
+        <div class="form-group"><label>Brand</label>
+          <select id="new-brand">
+            <option value="EBM">EBM</option>
+            <option value="ILT">ILT</option>
+            <option value="ONELENS">ONELENS</option>
+          </select>
+        </div>
+        <div class="form-group"><label>SPH</label>
+          <select id="new-sph">
+            <option value="PL">PL</option>
+            <option value="-0.25">-0.25</option>
+            <option value="-0.50">-0.50</option>
+            <option value="-0.75">-0.75</option>
+            <option value="-1.00">-1.00</option>
+            <option value="-1.25">-1.25</option>
+            <option value="-1.50">-1.50</option>
+            <option value="-1.75">-1.75</option>
+            <option value="-2.00">-2.00</option>
+            <option value="-2.25">-2.25</option>
+            <option value="-2.50">-2.50</option>
+            <option value="-2.75">-2.75</option>
+            <option value="-3.00">-3.00</option>
+            <option value="-3.25">-3.25</option>
+            <option value="-3.50">-3.50</option>
+            <option value="-3.75">-3.75</option>
+            <option value="-4.00">-4.00</option>
+            <option value="-4.25">-4.25</option>
+            <option value="-4.50">-4.50</option>
+            <option value="-4.75">-4.75</option>
+            <option value="-5.00">-5.00</option>
+            <option value="-5.25">-5.25</option>
+            <option value="-5.50">-5.50</option>
+            <option value="-5.75">-5.75</option>
+            <option value="-6.00">-6.00</option>
+            <optgroup label="Plus power">
+            <option value="+0.25">+0.25</option>
+            <option value="+0.50">+0.50</option>
+            <option value="+0.75">+0.75</option>
+            <option value="+1.00">+1.00</option>
+            <option value="+1.25">+1.25</option>
+            <option value="+1.50">+1.50</option>
+            <option value="+1.75">+1.75</option>
+            <option value="+2.00">+2.00</option>
+            <option value="+2.25">+2.25</option>
+            <option value="+2.50">+2.50</option>
+            <option value="+2.75">+2.75</option>
+            <option value="+3.00">+3.00</option>
+            <option value="+3.25">+3.25</option>
+            <option value="+3.50">+3.50</option>
+            <option value="+3.75">+3.75</option>
+            <option value="+4.00">+4.00</option>
+            <option value="+4.25">+4.25</option>
+            <option value="+4.50">+4.50</option>
+            <option value="+4.75">+4.75</option>
+            <option value="+5.00">+5.00</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="form-group"><label>CYL</label>
+          <select id="new-cyl">
+            <option value="0.00">0.00</option>
+            <option value="-0.25">-0.25</option>
+            <option value="-0.50">-0.50</option>
+            <option value="-0.75">-0.75</option>
+            <option value="-1.00">-1.00</option>
+            <option value="-1.25">-1.25</option>
+            <option value="-1.50">-1.50</option>
+            <option value="-1.75">-1.75</option>
+            <option value="-2.00">-2.00</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Description</label><input type="text" id="new-desc" placeholder="e.g. 1.61 HC+HMC"></div>
+        <div class="form-group"><label>Quantity</label><input type="number" id="new-qty" min="0" value="0"></div>
+        <div class="form-group"><label>Low alert at (qty)</label><input type="number" id="new-alert" min="1" value="5"></div>
+      </div>
+      <button class="btn-save" onclick="addEntry()">Save entry</button>
+    </div>
+  </div>
+  <!-- Transfer Panel -->
+  <div class="panel" id="panel-transfer">
+    <div class="section-header">
+      <span class="section-title">Stock Transfer</span>
+    </div>
+    <div class="form-card">
+      <h3>New Transfer</h3>
+      <div class="form-grid">
+        <div class="form-group"><label>From Branch</label>
+          <select id="tf-from" onchange="updateTfBrand()"></select>
+        </div>
+        <div class="form-group"><label>To Branch</label>
+          <select id="tf-to"></select>
+        </div>
+        <div class="form-group"><label>Brand</label>
+          <select id="tf-brand" onchange="updateTfLens()"></select>
+        </div>
+        <div class="form-group"><label>Lens</label>
+          <select id="tf-lens"></select>
+        </div>
+        <div class="form-group"><label>SPH</label>
+          <select id="tf-sph"></select>
+        </div>
+        <div class="form-group"><label>CYL</label>
+          <select id="tf-cyl">
+            <option value="0.00">0.00</option>
+            <option value="-0.25">-0.25</option>
+            <option value="-0.50">-0.50</option>
+            <option value="-0.75">-0.75</option>
+            <option value="-1.00">-1.00</option>
+            <option value="-1.25">-1.25</option>
+            <option value="-1.50">-1.50</option>
+            <option value="-1.75">-1.75</option>
+            <option value="-2.00">-2.00</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Quantity</label>
+          <input type="number" id="tf-qty" min="1" value="1">
+        </div>
+        <div class="form-group"><label>Remark (optional)</label>
+          <input type="text" id="tf-remark" placeholder="e.g. urgent request">
+        </div>
+      </div>
+      <button class="btn-save" onclick="doTransfer()">Confirm Transfer</button>
+    </div>
+    <div style="font-size:14px;font-weight:600;margin-bottom:10px;color:#333;">Recent transfers</div>
+    <!-- Filter bar -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
+      <div>
+        <div style="font-size:11px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:3px;">From Branch</div>
+        <select id="filter-from" onchange="renderRecentTransfers()" style="font-size:12px;height:32px;padding:4px 8px;">
+          <option value="">All branches</option>
+        </select>
+      </div>
+      <div style="font-size:16px;color:#bbb;padding-top:18px;">→</div>
+      <div>
+        <div style="font-size:11px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:3px;">To Branch</div>
+        <select id="filter-to" onchange="renderRecentTransfers()" style="font-size:12px;height:32px;padding:4px 8px;">
+          <option value="">All branches</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:11px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:3px;">Brand</div>
+        <select id="filter-brand" onchange="updateFilterLens();renderRecentTransfers();" style="font-size:12px;height:32px;padding:4px 8px;">
+          <option value="">All brands</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:11px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:3px;">Lens</div>
+        <select id="filter-lens" onchange="renderRecentTransfers()" style="font-size:12px;height:32px;padding:4px 8px;">
+          <option value="">All lenses</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:11px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:3px;">Date From</div>
+        <input type="date" id="filter-date-from" onchange="renderRecentTransfers()" style="font-size:12px;height:32px;padding:4px 8px;border-radius:8px;border:1px solid #ddd;">
+      </div>
+      <div style="font-size:14px;color:#bbb;padding-top:18px;">—</div>
+      <div>
+        <div style="font-size:11px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:3px;">Date To</div>
+        <input type="date" id="filter-date-to" onchange="renderRecentTransfers()" style="font-size:12px;height:32px;padding:4px 8px;border-radius:8px;border:1px solid #ddd;">
+      </div>
+      <div style="padding-top:18px;">
+        <button onclick="clearTransferFilters()" style="height:32px;padding:0 12px;background:#f0f0f0;border:1px solid #ddd;border-radius:8px;font-size:12px;cursor:pointer;color:#555;">✕ Clear</button>
+      </div>
+      <div id="filter-count" style="padding-top:18px;font-size:12px;color:#888;"></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Date / Time</th><th>From</th><th style="text-align:center;">→</th><th>To</th><th>Brand</th><th>Lens</th><th>SPH</th><th>CYL</th><th>Qty</th><th>Remark</th><th>Operator</th><th></th>
+        </tr></thead>
+        <tbody id="recent-tbody"></tbody>
+      </table>
+    </div>
+
+</div>
+
+<!-- ── Branch Breakdown Modal ── -->
+<div class="modal-overlay" id="breakdown-overlay">
+  <div class="breakdown-modal">
+    <div class="modal-title" id="breakdown-title"></div>
+    <div class="modal-sub" id="breakdown-sub" style="margin-bottom:1rem;"></div>
+    <div id="breakdown-body"></div>
+    <div class="modal-footer" style="margin-top:1rem;">
+      <button class="btn-modal-close" onclick="document.getElementById('breakdown-overlay').classList.remove('show')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Edit Qty Modal ── -->
+<div class="modal-overlay" id="edit-overlay">
+  <div class="modal" style="width:300px;">
+    <div class="modal-title" id="edit-title">Adjust Stock</div>
+    <div class="modal-sub" id="edit-sub" style="margin-bottom:1rem;line-height:1.6;"></div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:1rem;">
+      <input type="number" id="edit-qty-input" min="0" style="flex:1;font-size:18px;font-weight:600;text-align:center;">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn-modal-close" onclick="closeEditModal()">Cancel</button>
+      <button class="btn-modal-add" onclick="confirmEdit()">Save ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Manage Modal ── -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Manage</div>
+    <div class="modal-sub" id="modal-sub"></div>
+    <ul class="modal-list" id="modal-list"></ul>
+    <div class="modal-add-row">
+      <input type="text" id="modal-input" placeholder="Enter name…" maxlength="40">
+      <button class="btn-modal-add" onclick="modalAddItem()">＋ Add</button>
+    </div>
+    <!-- Extra lens input shown only when adding a brand -->
+    <div id="modal-lens-row" style="display:none; margin-top:8px;">
+      <div style="font-size:11px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:4px;">First Lens Name <span style="color:#c0392b;">*required</span></div>
+      <input type="text" id="modal-lens-input" placeholder="e.g. 1.56 HC+HMC" maxlength="40" style="width:100%;">
+    </div>
+    <div class="modal-footer"><button class="btn-modal-close" onclick="closeModal()">Done</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+// ═══════════════════════════════════════════════
+//  HALO OPTICAL — LENS INVENTORY
+//  Firebase Realtime Database backend
+// ═══════════════════════════════════════════════
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD1b1Hu1MlJzD-RdTOGIq-2ArDQdqc76es",
+  authDomain: "halo-optical-7290b.firebaseapp.com",
+  databaseURL: "https://halo-optical-7290b-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "halo-optical-7290b",
+  storageBucket: "halo-optical-7290b.firebasestorage.app",
+  messagingSenderId: "1077080299946",
+  appId: "1:1077080299946:web:4b2532439de4c49daaf3d3"
+};
+const firebaseApp = initializeApp(firebaseConfig);
+const firebaseDb  = getDatabase(firebaseApp);
+const firebaseAuth = getAuth(firebaseApp);
+const googleProvider = new GoogleAuthProvider();
+
+// ── Email whitelist ──
+const ALLOWED_EMAILS = [
+  "khteoh8196@gmail.com",
+  "hyang921002@gmail.com"
+];
+
+function isAllowed(email){ return email && ALLOWED_EMAILS.includes(email.toLowerCase()); }
+
+async function doLogin(){
+  try{
+    const result = await signInWithPopup(firebaseAuth, googleProvider);
+    if(!isAllowed(result.user.email)){
+      alert(`❌ Access denied.\n\n${result.user.email} is not authorized to use this system.\n\nPlease contact the administrator.`);
+      await signOut(firebaseAuth);
+    }
+  }catch(e){
+    console.error("Login error:", e);
+    if(e.code !== "auth/popup-closed-by-user") alert("Login failed: " + e.message);
+  }
+}
+
+async function doLogout(){
+  if(confirm("Log out?")){
+    await signOut(firebaseAuth);
+    location.reload();
+  }
+}
+
+window.doLogin = doLogin;
+window.doLogout = doLogout;
+
+function fbSet(path, data){ return set(ref(firebaseDb, path), data); }
+function fbGet(path){ return get(ref(firebaseDb, path)).then(s=>s.val()); }
+function fbRemove(path){ return remove(ref(firebaseDb, path)); }
+function fbListen(path, cb){ onValue(ref(firebaseDb, path), snap=>cb(snap.val())); }
+function showLoading(msg){ document.getElementById("last-updated").textContent = msg||"Syncing..."; }
+
+// Make functions globally available for inline onclick handlers
+window.addEventListener = window.addEventListener || (()=>{});
+
+let BRANCHES = ["HQ","JURU","BM","MB","KULIM","IP","MELAKA","KEPONG","KULAI","ICON"];
+const LOW_T = 5, CRIT_T = 2;
+let db = {};
+let activeBranch = null, activePanel = "overview";
+let activeOverviewBrand = "EBM";
+let activeBranchBrand = null;
+let activeLensPerBrand = {}; // { "branch|brand": lensName }
+
+// ── Per-branch config ──────────────────────────
+// branchConfig[b] = { brands:[...], lensOrders:{ brand:[...] } }
+let branchConfig = {};
+
+const DEFAULT_NON_HQ = {
+  brands: ["EBM","ILT","ONELENS"],
+  lensOrders: {
+    "EBM":     ["1.56 UVFWD"],
+    "ILT":     ["1.56 UV400 HMC","1.61 UV400 HMC","1.67 UV400 HMC","1.56 UVNEX","1.61 UVNEX","1.67 UVNEX","1.56 BEYOND","1.61 BEYOND","1.56 REAL","1.56 RAY12"],
+    "ONELENS": ["1.56 UV2","1.61 UV2","1.67 UV2"],
+  }
+};
+const DEFAULT_HQ = {
+  brands: ["KODAK"],
+  lensOrders: {
+    "KODAK": ["1.56 CITY LENS","1.61 CITY LENS","1.56 UVBLUE","1.61 UVBLUE"],
+  }
+};
+const PROTECTED_BRANCHES = ["HQ"];
+function getProtectedBrands(branch){ return branch==="HQ" ? ["KODAK"] : ["EBM","ILT","ONELENS"]; }
+
+function getBranchConfig(b){
+  if(!branchConfig[b]){
+    branchConfig[b] = JSON.parse(JSON.stringify(b==="HQ" ? DEFAULT_HQ : DEFAULT_NON_HQ));
+  }
+  return branchConfig[b];
+}
+function getBranchBrands(b){ return getBranchConfig(b).brands; }
+function getBranchLensOrder(b, brand){ return getBranchConfig(b).lensOrders[brand] || []; }
+function setBranchLensOrder(b, brand, arr){ getBranchConfig(b).lensOrders[brand] = arr; }
+
+// All Branches overview: union of brands across all branches
+function getAllOverviewBrands(){
+  const seen = [], set = new Set();
+  BRANCHES.forEach(b=>{ getBranchBrands(b).forEach(br=>{ if(!set.has(br)){ set.add(br); seen.push(br); } }); });
+  return seen;
+}
+// All lenses for a brand across all branches (union)
+function getAllLensesForBrand(brand){
+  const seen = [], set = new Set();
+  BRANCHES.forEach(b=>{ getBranchLensOrder(b,brand).forEach(l=>{ if(!set.has(l)){ set.add(l); seen.push(l); } }); });
+  return seen;
+}
+
+// Active lens key per branch+brand
+function lensKey(b, brand){ return b+"|"+brand; }
+function getActiveLens(b, brand){
+  const k = lensKey(b,brand);
+  if(!activeLensPerBrand[k]){ activeLensPerBrand[k] = getBranchLensOrder(b,brand)[0]||""; }
+  return activeLensPerBrand[k];
+}
+function setActiveLens(b, brand, lens){ activeLensPerBrand[lensKey(b,brand)] = lens; }
+
+// ── Storage ────────────────────────────────────
+function skey(b){ return "halo_inv13_" + b.replace(/\s/g,"_"); }
+const CONFIG_KEY = "halo_inv13_config";
+
+async function saveConfig(){
+  try{ await fbSet("config", { BRANCHES, branchConfig }); }catch(e){ console.error("saveConfig:",e); }
+}
+async function loadConfig(){
+  try{
+    const cfg = await fbGet("config");
+    if(!cfg) return;
+    if(cfg.BRANCHES && cfg.BRANCHES.length) BRANCHES = cfg.BRANCHES;
+    if(cfg.branchConfig) branchConfig = cfg.branchConfig;
+  }catch(e){ console.error("loadConfig:",e); }
+}
+async function save(b){
+  try{
+    await fbSet("branches/" + b.replace(/\s/g,"_"), db[b]);
+    await saveConfig();
+    document.getElementById("last-updated").textContent = "Updated: " + new Date().toLocaleTimeString();
+  }catch(e){ console.error("save:",e); }
+}
+async function load(){
+  showLoading("Loading data...");
+  await loadConfig();
+  const hqCfg = getBranchConfig("HQ");
+  if(hqCfg.brands.includes("KODAK CITY LENS") || hqCfg.brands.includes("KODAK UVBLUE")){
+    branchConfig["HQ"] = JSON.parse(JSON.stringify(DEFAULT_HQ));
+  }
+  const allData = await fbGet("branches") || {};
+  BRANCHES.forEach(b=>{
+    const key = b.replace(/\s/g,"_");
+    db[b] = allData[key] || sampleData(b);
+  });
+  // Real-time listeners
+  fbListen("branches", allData=>{
+    if(!allData) return;
+    BRANCHES.forEach(b=>{ const key=b.replace(/\s/g,"_"); if(allData[key]) db[b]=allData[key]; });
+    renderAll();
+    document.getElementById("last-updated").textContent = "Live: " + new Date().toLocaleTimeString();
+  });
+  fbListen("config", cfg=>{
+    if(!cfg) return;
+    if(cfg.BRANCHES && cfg.BRANCHES.length) BRANCHES = cfg.BRANCHES;
+    if(cfg.branchConfig) branchConfig = cfg.branchConfig;
+    renderAll();
+  });
+}
+
+// ── lensProfile: infer SPH range from lens name ─
+function lensProfile(desc){
+  const cyls    = ["0.00","-0.25","-0.50","-0.75","-1.00","-1.25","-1.50","-1.75","-2.00"];
+  const stdSphs = ["PL","-0.25","-0.50","-0.75","-1.00","-1.25","-1.50","-1.75","-2.00","-2.25","-2.50","-2.75","-3.00","-3.25","-3.50","-3.75","-4.00","-4.25","-4.50","-4.75","-5.00","-5.25","-5.50","-5.75","-6.00"];
+  const sphs161 = ["-4.00","-4.25","-4.50","-4.75","-5.00","-5.25","-5.50","-5.75","-6.00","-6.25","-6.50","-6.75","-7.00","-7.25","-7.50","-7.75","-8.00"];
+  const sphs167 = ["-6.00","-6.25","-6.50","-6.75","-7.00","-7.25","-7.50","-7.75","-8.00","-8.25","-8.50","-8.75","-9.00","-9.25","-9.50","-9.75","-10.00"];
+  const plusSphs= ["+0.25","+0.50","+0.75","+1.00","+1.25","+1.50","+1.75","+2.00","+2.25","+2.50","+2.75","+3.00","+3.25","+3.50","+3.75","+4.00","+4.25","+4.50","+4.75","+5.00"];
+  let sphs=stdSphs, hasPlus=true;
+  if(desc.startsWith("1.67")){ sphs=sphs167; hasPlus=false; }
+  else if(desc.startsWith("1.61")){ sphs=sphs161; hasPlus=false; }
+  return { sphs, cyls, plusSphs, hasPlus };
+}
+
+function sampleData(branch){
+  const rows=[];
+  getBranchBrands(branch).forEach(brand=>{
+    getBranchLensOrder(branch,brand).forEach(desc=>{
+      const {sphs,cyls,plusSphs,hasPlus}=lensProfile(desc);
+      sphs.forEach(sph=>cyls.forEach(cyl=>rows.push({id:uid(),brand,type:"Single Vision",sph,cyl,desc,qty:0,alert:LOW_T})));
+      if(hasPlus) plusSphs.forEach(sph=>rows.push({id:uid(),brand,type:"Single Vision",sph,cyl:"0.00",desc,qty:0,alert:LOW_T,isPlus:true}));
+    });
+  });
+  return rows;
+}
+
+function sampleLensEntries(branch, brand, desc){
+  const {sphs,cyls,plusSphs,hasPlus}=lensProfile(desc);
+  const rows=[];
+  sphs.forEach(sph=>cyls.forEach(cyl=>rows.push({id:uid(),brand,type:"Single Vision",sph,cyl,desc,qty:0,alert:LOW_T})));
+  if(hasPlus) plusSphs.forEach(sph=>rows.push({id:uid(),brand,type:"Single Vision",sph,cyl:"0.00",desc,qty:0,alert:LOW_T,isPlus:true}));
+  return rows;
+}
+
+function uid(){ return Math.random().toString(36).slice(2,10); }
+
+// ── Stock helpers ──────────────────────────────
+function qClass(qty,alert){
+  if(qty===0) return "c-zero";
+  if(qty<=CRIT_T) return "c-critical";
+  if(qty<=alert) return "c-low";
+  return "c-ok";
+}
+
+// ── Matrix renderers ───────────────────────────
+// showAdjust=true → branch edit; showAdjust=false + overviewDesc → overview breakdown
+function matrixHTML(entries, showAdjust, branch, overviewDesc){
+  if(!entries.length) return '<p class="empty-note">No entries yet.</p>';
+  const SPH_ORDER=["PL","-0.25","-0.50","-0.75","-1.00","-1.25","-1.50","-1.75","-2.00","-2.25","-2.50","-2.75","-3.00","-3.25","-3.50","-3.75","-4.00","-4.25","-4.50","-4.75","-5.00","-5.25","-5.50","-5.75","-6.00","-6.25","-6.50","-6.75","-7.00","-7.25","-7.50","-7.75","-8.00","-8.25","-8.50","-8.75","-9.00","-9.25","-9.50","-9.75","-10.00"];
+  const CYL_ORDER=["0.00","-0.25","-0.50","-0.75","-1.00","-1.25","-1.50","-1.75","-2.00"];
+  const sphSet=new Set(entries.map(e=>e.sph)), cylSet=new Set(entries.map(e=>e.cyl));
+  const sphs=SPH_ORDER.filter(s=>sphSet.has(s)), cyls=CYL_ORDER.filter(c=>cylSet.has(c));
+  const lookup={}; entries.forEach(e=>{lookup[`${e.sph}||${e.cyl}`]=e;});
+  const colTotals={}, rowTotals={}; let grand=0;
+  sphs.forEach(s=>{rowTotals[s]=0; entries.filter(e=>e.sph===s).forEach(e=>{rowTotals[s]+=e.qty; grand+=e.qty;});});
+  cyls.forEach(c=>{colTotals[c]=0; entries.filter(e=>e.cyl===c).forEach(e=>{colTotals[c]+=e.qty;});});
+  const head=`<thead><tr><th class="corner">SPH / CYL</th>${cyls.map(c=>`<th>${c}</th>`).join("")}<th class="total-col">TOTAL</th></tr></thead>`;
+  const body=sphs.map(sph=>{
+    const cells=cyls.map(cyl=>{
+      const e=lookup[`${sph}||${cyl}`]; const qty=e?e.qty:0; const cls=e?qClass(qty,e.alert):"c-zero";
+      if(showAdjust&&e) return `<td class="${cls} clickable" onclick="openEdit('${branch}','${e.id}')" title="Click to adjust">${qty>0?qty:"—"}</td>`;
+      if(overviewDesc) return `<td class="${cls} clickable" onclick="openBreakdown('${e?e.brand:''}','${overviewDesc}','${sph}','${cyl}')" title="Click to see branch breakdown">${qty>0?qty:"—"}</td>`;
+      return `<td class="${cls}">${qty>0?qty:"—"}</td>`;
+    }).join("");
+    return `<tr><td class="sph-label">${sph}</td>${cells}<td class="total-cell">${rowTotals[sph]}</td></tr>`;
+  }).join("");
+  const foot=`<tfoot><tr><td class="label-cell">TOTAL</td>${cyls.map(c=>`<td>${colTotals[c]||0}</td>`).join("")}<td class="grand-total">${grand}</td></tr></tfoot>`;
+  return `<div class="matrix-wrap"><table class="matrix-table">${head}<tbody>${body}</tbody>${foot}</table></div>`;
+}
+
+function plusMatrixHTML(entries, showAdjust, branch, overviewDesc){
+  const PLUS_ORDER=["+0.25","+0.50","+0.75","+1.00","+1.25","+1.50","+1.75","+2.00","+2.25","+2.50","+2.75","+3.00","+3.25","+3.50","+3.75","+4.00","+4.25","+4.50","+4.75","+5.00"];
+  const sphSet=new Set(entries.map(e=>e.sph));
+  const sphs=PLUS_ORDER.filter(s=>sphSet.has(s));
+  if(!sphs.length) return '';
+  let grand=0;
+  const rows=sphs.map(sph=>{
+    const e=entries.find(x=>x.sph===sph); const qty=e?e.qty:0; grand+=qty;
+    const cls=e?qClass(qty,e.alert):"c-zero";
+    let cell;
+    if(showAdjust&&e) cell=`<td class="${cls} clickable" onclick="openEdit('${branch}','${e.id}')" title="Click to adjust">${qty>0?qty:"—"}</td>`;
+    else if(overviewDesc) cell=`<td class="${cls} clickable" onclick="openBreakdown('${e?e.brand:''}','${overviewDesc}','${sph}','0.00')" title="Click to see branch breakdown">${qty>0?qty:"—"}</td>`;
+    else cell=`<td class="${cls}">${qty>0?qty:"—"}</td>`;
+    return `<tr><td class="sph-label">${sph}</td>${cell}<td class="total-cell">${qty>0?qty:"—"}</td></tr>`;
+  }).join("");
+  return `<div class="plus-table-wrap"><table class="plus-matrix"><thead><tr><th class="corner">SPH</th><th>QTY</th><th class="total-col">TOTAL</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td class="label-cell">TOTAL</td><td>${grand}</td><td class="grand-total">${grand}</td></tr></tfoot></table></div>`;
+}
+
+// Render lens content block for a given lens tab selection
+function renderLensBlock(entries, activeLens, showAdjust, branch){
+  const lensEntries=entries.filter(e=>e.desc===activeLens);
+  if(!lensEntries.length) return '<p class="empty-note">No entries for this lens.</p>';
+  const neg=lensEntries.filter(e=>!e.sph.startsWith("+"));
+  const plus=lensEntries.filter(e=>e.sph.startsWith("+"));
+  const grand=lensEntries.reduce((s,e)=>s+e.qty,0);
+  const titleCls=showAdjust?"branch-brand-title":"brand-section-title";
+  const badge=showAdjust?`style="font-weight:400;color:#888;"`:`class="brand-total-badge"`;
+  const units=showAdjust?`${grand} units`:`${grand.toLocaleString()} units total`;
+  // overview mode: pass activeLens as overviewDesc for breakdown clicks
+  const ovDesc = showAdjust ? null : activeLens;
+  return `<div class="${showAdjust?'branch-brand-section':'brand-section'}">
+    <div class="${titleCls}">${activeLens} <span ${badge}>${units}</span></div>
+    <div class="brand-tables-row">${matrixHTML(neg,showAdjust,branch,ovDesc)}${plus.length?plusMatrixHTML(plus,showAdjust,branch,ovDesc):""}</div>
+  </div>`;
+}
+
+// ── Lens tabs renderer ─────────────────────────
+function hideLensTabs(){
+  ["overview-lens-tabs-wrap","branch-lens-tabs-wrap"].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display="none";});
+}
+
+function renderLensTabs(tabsId, wrapId, lensOrder, getActive, setActive, onSelect, manageBranch, manageBrand){
+  const wrap=document.getElementById(wrapId), c=document.getElementById(tabsId);
+  wrap.style.display=""; c.innerHTML="";
+  lensOrder.forEach(desc=>{
+    const t=document.createElement("div");
+    t.className="lens-tab"+(getActive()===desc?" active":"");
+    t.textContent=desc;
+    t.onclick=()=>{ setActive(desc); renderLensTabs(tabsId,wrapId,lensOrder,getActive,setActive,onSelect,manageBranch,manageBrand); onSelect(); };
+    c.appendChild(t);
+  });
+  // Show ＋/－ only for branch panels (not overview)
+  if(manageBranch && manageBrand){
+    const btn=document.createElement("button");
+    btn.className="btn-manage"; btn.innerHTML="＋／－";
+    btn.title=`Add or remove ${manageBrand} lens types`;
+    btn.onclick=()=>openModalLens(manageBranch, manageBrand);
+    c.appendChild(btn);
+  }
+}
+
+// ── Overview panel ─────────────────────────────
+function renderOverviewBrandTabs(){
+  const c=document.getElementById("overview-brand-tabs"); c.innerHTML="";
+  getAllOverviewBrands().forEach(brand=>{
+    const t=document.createElement("div");
+    t.className="brand-tab"+(activeOverviewBrand===brand?" active":"");
+    t.textContent=brand;
+    t.onclick=()=>{ activeOverviewBrand=brand; hideLensTabs(); renderOverviewBrandTabs(); renderOverviewContent(); };
+    c.appendChild(t);
+  });
+  // No ＋/－ on overview
+}
+
+function renderOverviewContent(){
+  const container=document.getElementById("overview-brands");
+  const brand=activeOverviewBrand;
+  // Collect all entries for this brand across all branches
+  const allEntries=[];
+  BRANCHES.forEach(b=>{ (db[b]||[]).filter(e=>e.brand===brand).forEach(e=>allEntries.push(e)); });
+  const merged={};
+  allEntries.forEach(e=>{ const k=`${e.sph}||${e.cyl}||${e.desc}`; if(!merged[k]) merged[k]={...e,qty:0}; merged[k].qty+=e.qty; });
+  const mergedEntries=Object.values(merged);
+  const lensOrder=getAllLensesForBrand(brand);
+  if(!lensOrder.length){ container.innerHTML='<p class="empty-note">No lens data found.</p>'; hideLensTabs(); return; }
+  const ovKey="overview|"+brand;
+  if(!activeLensPerBrand[ovKey]) activeLensPerBrand[ovKey]=lensOrder[0];
+  // Clamp to valid lens
+  if(!lensOrder.includes(activeLensPerBrand[ovKey])) activeLensPerBrand[ovKey]=lensOrder[0];
+  renderLensTabs(
+    "overview-lens-tabs","overview-lens-tabs-wrap", lensOrder,
+    ()=>activeLensPerBrand[ovKey], v=>{ activeLensPerBrand[ovKey]=v; },
+    ()=>{ container.innerHTML=renderLensBlock(mergedEntries, activeLensPerBrand[ovKey], false, null); },
+    null, null // no manage buttons on overview
+  );
+  container.innerHTML=renderLensBlock(mergedEntries, activeLensPerBrand[ovKey], false, null);
+}
+
+function renderOverview(){ renderOverviewBrandTabs(); renderOverviewContent(); }
+
+// ── Branch panel ───────────────────────────────
+function renderBranch(){
+  document.getElementById("branch-title").textContent=activeBranch;
+  const brands=getBranchBrands(activeBranch);
+  if(!brands.includes(activeBranchBrand)) activeBranchBrand=brands[0]||null;
+  // Update "Add entry" brand dropdown
+  const nb=document.getElementById("new-brand");
+  nb.innerHTML=brands.map(b=>`<option value="${b}">${b}</option>`).join("");
+  renderBranchBrandTabs();
+  renderBranchMatrices();
+}
+
+function renderBranchBrandTabs(){
+  const c=document.getElementById("branch-brand-tabs"); c.innerHTML="";
+  const brands=getBranchBrands(activeBranch);
+  brands.forEach(brand=>{
+    const t=document.createElement("div");
+    t.className="brand-tab"+(activeBranchBrand===brand?" active":"");
+    t.textContent=brand;
+    t.onclick=()=>{ activeBranchBrand=brand; hideLensTabs(); renderBranchBrandTabs(); renderBranchMatrices(); };
+    c.appendChild(t);
+  });
+  // ＋/－ for brand management on every branch including HQ
+  const btn=document.createElement("button");
+  btn.className="btn-manage"; btn.innerHTML="＋／－";
+  btn.title="Add or remove brands";
+  btn.onclick=()=>openModalBrand(activeBranch);
+  c.appendChild(btn);
+}
+
+function renderBranchMatrices(){
+  const b=activeBranch, brand=activeBranchBrand;
+  const container=document.getElementById("branch-matrices");
+  if(!brand){ container.innerHTML='<p class="empty-note">No brands configured.</p>'; return; }
+  const lensOrder=getBranchLensOrder(b, brand);
+  if(!lensOrder.length){ container.innerHTML='<p class="empty-note">No lens types configured for this brand.</p>'; hideLensTabs(); return; }
+  const k=lensKey(b,brand);
+  if(!activeLensPerBrand[k]) activeLensPerBrand[k]=lensOrder[0];
+  if(!lensOrder.includes(activeLensPerBrand[k])) activeLensPerBrand[k]=lensOrder[0];
+  const entries=(db[b]||[]).filter(e=>e.brand===brand && e.type==="Single Vision");
+  renderLensTabs(
+    "branch-lens-tabs","branch-lens-tabs-wrap", lensOrder,
+    ()=>activeLensPerBrand[k], v=>{ activeLensPerBrand[k]=v; },
+    ()=>{ container.innerHTML=renderLensBlock(entries, activeLensPerBrand[k], true, b); },
+    b, brand // pass branch + brand for ＋/－ button
+  );
+  container.innerHTML=renderLensBlock(entries, activeLensPerBrand[k], true, b);
+}
+
+// ── Edit qty modal ─────────────────────────────
+let _editBranch=null, _editId=null;
+function openEdit(branch, id){
+  const e=(db[branch]||[]).find(x=>x.id===id); if(!e) return;
+  _editBranch=branch; _editId=id;
+  document.getElementById("edit-title").textContent="Adjust Stock";
+  document.getElementById("edit-sub").innerHTML=`<span style="color:#888;font-size:12px;">${e.brand}</span><br><strong>SPH ${e.sph}</strong> &nbsp;|&nbsp; <strong>CYL ${e.cyl}</strong><br><span style="color:#888;font-size:12px;">${e.desc}</span>`;
+  const inp=document.getElementById("edit-qty-input"); inp.value=e.qty;
+  document.getElementById("edit-overlay").classList.add("show");
+  setTimeout(()=>{inp.focus();inp.select();},80);
+}
+async function confirmEdit(){
+  const q=parseInt(document.getElementById("edit-qty-input").value);
+  if(isNaN(q)||q<0){toast("Invalid quantity");return;}
+  const e=(db[_editBranch]||[]).find(x=>x.id===_editId); if(!e) return;
+  e.qty=q; await save(_editBranch); closeEditModal(); renderAll(); toast("Stock updated ✓");
+}
+function closeEditModal(){
+  document.getElementById("edit-overlay").classList.remove("show");
+  _editBranch=null; _editId=null;
+}
+document.getElementById("edit-qty-input").addEventListener("keydown",function(e){if(e.key==="Enter")confirmEdit();if(e.key==="Escape")closeEditModal();});
+document.getElementById("edit-overlay").addEventListener("click",function(e){if(e.target===this)closeEditModal();});
+
+// ── Main tab / summary renderers ───────────────
+function renderTabs(){
+  const c=document.getElementById("tabs"); c.innerHTML="";
+  const tabDefs=[{id:"overview",label:"All branches",cls:""}, ...BRANCHES.map(b=>({id:b,label:b,cls:""})), {id:"transfer",label:"⇄ Transfer",cls:" tab-transfer"}];
+  tabDefs.forEach(def=>{
+    const t=document.createElement("div");
+    t.className="tab"+(activePanel===def.id?" active":"")+def.cls;
+    t.textContent=def.label;
+    t.onclick=()=>{
+      activePanel=def.id;
+      activeBranch=["overview","transfer"].includes(def.id)?null:def.id;
+      activeBranchBrand=null; activeLensPerBrand={};
+      hideLensTabs(); renderAll();
+    };
+    c.appendChild(t);
+  });
+  // ＋/－ for branch management
+  const btn=document.createElement("button");
+  btn.className="btn-manage"; btn.innerHTML="＋／－"; btn.title="Add or remove branches";
+  btn.onclick=openModalBranch;
+  c.appendChild(btn);
+}
+
+function renderSummary(){
+  let total=0,low=0,crit=0;
+  BRANCHES.forEach(b=>(db[b]||[]).forEach(e=>{
+    total+=e.qty;
+    if(e.qty>0&&e.qty<=CRIT_T) crit++;
+    else if(e.qty>0&&e.qty<=e.alert) low++;
+  }));
+  document.getElementById("summary-grid").innerHTML=`
+    <div class="metric-card"><div class="metric-label">Total units</div><div class="metric-value">${total.toLocaleString()}</div></div>
+    <div class="metric-card"><div class="metric-label">Branches</div><div class="metric-value">${BRANCHES.length}</div></div>
+    <div class="metric-card"><div class="metric-label">Low stock</div><div class="metric-value ${low>0?"danger":""}">${low}</div></div>
+    <div class="metric-card"><div class="metric-label">Critical</div><div class="metric-value ${crit>0?"danger":""}">${crit}</div></div>`;
+}
+
+function renderAll(){
+  renderTabs(); renderSummary();
+  ["panel-overview","panel-branch","panel-transfer"].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove("active");});
+  if(activePanel==="overview"){document.getElementById("panel-overview").classList.add("active");renderOverview();}
+  else if(activePanel==="transfer"){document.getElementById("panel-transfer").classList.add("active");renderTransferPanel();}
+  else{document.getElementById("panel-branch").classList.add("active");renderBranch();}
+}
+
+// ── Add entry form ─────────────────────────────
+async function addEntry(){
+  const b=activeBranch;
+  const brand=document.getElementById("new-brand").value;
+  const sph=document.getElementById("new-sph").value;
+  const cyl=document.getElementById("new-cyl").value;
+  const desc=document.getElementById("new-desc").value.trim();
+  const qty=parseInt(document.getElementById("new-qty").value)||0;
+  const alert=parseInt(document.getElementById("new-alert").value)||5;
+  if(!sph){toast("SPH is required");return;}
+  const ex=(db[b]||[]).find(e=>e.brand===brand&&e.sph===sph&&e.cyl===cyl&&e.type==="Single Vision");
+  if(ex){ex.qty+=qty;if(desc)ex.desc=desc;}
+  else db[b].push({id:uid(),brand,type:"Single Vision",sph,cyl,desc,qty,alert});
+  await save(b); renderAll(); toast("Entry saved ✓");
+  document.getElementById("new-desc").value="";
+  document.getElementById("new-qty").value=0;
+}
+
+// ── Export CSV ─────────────────────────────────
+function exportCSV(){
+  const rows=[["Branch","Brand","SPH","CYL","Description","Stock"]];
+  BRANCHES.forEach(b=>(db[b]||[]).forEach(e=>rows.push([b,e.brand,e.sph,e.cyl,e.desc,e.qty])));
+  const csv=rows.map(r=>r.map(v=>`"${v}"`).join(",")).join("\n");
+  const a=document.createElement("a"); a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+  a.download="halo_optical_"+new Date().toISOString().slice(0,10)+".csv"; a.click();
+}
+
+// ── Transfer panel ─────────────────────────────
+function loadLog(){ return window._logCache || []; }
+function saveLog(log){
+  window._logCache = log;
+  fbSet("transferLog", log).catch(e=>console.error("Log save:",e));
+}
+async function loadLogAsync(){
+  try{
+    const log = await fbGet("transferLog") || [];
+    window._logCache = log;
+    fbListen("transferLog", data=>{
+      window._logCache = data || [];
+      if(activePanel==="transfer") renderRecentTransfers();
+    });
+  }catch(e){ console.error("loadLogAsync:",e); window._logCache=[]; }
+}
+
+const SPH_ALL=["PL","+0.25","+0.50","+0.75","+1.00","+1.25","+1.50","+1.75","+2.00","+2.25","+2.50","+2.75","+3.00","+3.25","+3.50","+3.75","+4.00","+4.25","+4.50","+4.75","+5.00","-0.25","-0.50","-0.75","-1.00","-1.25","-1.50","-1.75","-2.00","-2.25","-2.50","-2.75","-3.00","-3.25","-3.50","-3.75","-4.00","-4.25","-4.50","-4.75","-5.00","-5.25","-5.50","-5.75","-6.00","-6.25","-6.50","-6.75","-7.00","-7.25","-7.50","-7.75","-8.00","-8.25","-8.50","-8.75","-9.00","-9.25","-9.50","-9.75","-10.00"];
+
+function renderTransferPanel(){
+  const from=document.getElementById("tf-from"), to=document.getElementById("tf-to");
+  from.innerHTML=""; to.innerHTML="";
+  BRANCHES.forEach(b=>{from.add(new Option(b,b));to.add(new Option(b,b));});
+  if(BRANCHES.length>1) to.selectedIndex=1;
+  updateTfBrand();
+  renderRecentTransfers();
+}
+
+function updateTfBrand(){
+  const fromBranch=document.getElementById("tf-from").value;
+  const brandEl=document.getElementById("tf-brand");
+  brandEl.innerHTML=getBranchBrands(fromBranch).map(b=>`<option value="${b}">${b}</option>`).join("");
+  updateTfLens();
+}
+
+function updateTfLens(){
+  const fromBranch=document.getElementById("tf-from").value;
+  const brand=document.getElementById("tf-brand").value;
+  const lensEl=document.getElementById("tf-lens");
+  const lenses=getBranchLensOrder(fromBranch, brand);
+  lensEl.innerHTML=lenses.map(l=>`<option value="${l}">${l}</option>`).join("");
+  document.getElementById("tf-sph").innerHTML=SPH_ALL.map(s=>`<option value="${s}">${s}</option>`).join("");
+}
+
+function renderRecentTransfers(){
+  const log=loadLog();
+  const tbody=document.getElementById("recent-tbody"); if(!tbody) return;
+
+  // Backfill id for old records
+  let dirty=false;
+  log.forEach(r=>{ if(!r.id){ r.id=uid(); dirty=true; } });
+  if(dirty) saveLog(log);
+
+  // Populate filter dropdowns (only on first render or if empty)
+  populateTransferFilters(log);
+
+  // Apply filters
+  const fFrom      = (document.getElementById("filter-from")||{}).value     || "";
+  const fTo        = (document.getElementById("filter-to")||{}).value       || "";
+  const fBrand     = (document.getElementById("filter-brand")||{}).value    || "";
+  const fLens      = (document.getElementById("filter-lens")||{}).value     || "";
+  const fDateFrom  = (document.getElementById("filter-date-from")||{}).value || "";
+  const fDateTo    = (document.getElementById("filter-date-to")||{}).value   || "";
+
+  let filtered = log.filter(r=>{
+    if(fFrom  && r.from  !== fFrom)  return false;
+    if(fTo    && r.to    !== fTo)    return false;
+    if(fBrand && r.brand !== fBrand) return false;
+    if(fLens  && r.lens  !== fLens)  return false;
+    if(fDateFrom || fDateTo){
+      const rDate = extractDateObj(r.dt);
+      if(rDate){
+        if(fDateFrom && rDate < new Date(fDateFrom)) return false;
+        if(fDateTo   && rDate > new Date(fDateTo + "T23:59:59")) return false;
+      }
+    }
+    return true;
+  });
+
+  // Show count
+  const countEl=document.getElementById("filter-count");
+  if(countEl){
+    const totalQty=filtered.reduce((s,r)=>s+r.qty,0);
+    countEl.textContent = filtered.length
+      ? `${filtered.length} record${filtered.length>1?"s":""} · ${totalQty} units`
+      : "";
+  }
+
+  const recent=filtered.slice(0,50);
+  if(!recent.length){
+    tbody.innerHTML='<tr><td colspan="12" style="text-align:center;color:#aaa;padding:1.5rem;">No matching records.</td></tr>';
+    return;
+  }
+  tbody.innerHTML=recent.map((r)=>`<tr id="trow-${r.id}">
+    <td style="color:#888;font-size:12px;white-space:nowrap;">${r.dt}</td>
+    <td><strong>${r.from}</strong></td><td style="text-align:center;color:#888;">→</td>
+    <td><strong style="color:#185fa5">${r.to}</strong></td>
+    <td>${r.brand}</td><td>${r.lens}</td><td>${r.sph}</td><td>${r.cyl}</td>
+    <td style="font-weight:600">${r.qty}</td><td style="color:#888">${r.remark||"—"}</td>
+    <td style="color:#666;font-size:11px;">${r.operator||"—"}</td>
+    <td id="tcancel-${r.id}"><button onclick="confirmCancelTransfer('${r.id}')" style="background:none;border:1px solid #e0c0c0;color:#c0392b;border-radius:6px;padding:2px 8px;font-size:12px;cursor:pointer;" title="Undo this transfer">✕</button></td>
+  </tr>`).join("");
+}
+
+// Extract YYYY/MM from any locale date string like "23/04/2026, 15:14" or "4/23/2026, 3:14 PM"
+function extractMonthKey(dt){
+  if(!dt) return null;
+  // Try DD/MM/YYYY (e.g. 23/04/2026)
+  let m = dt.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m){
+    const day=parseInt(m[1]), mon=parseInt(m[2]), yr=parseInt(m[3]);
+    // Disambiguate: if first number > 12, it must be day (DD/MM/YYYY)
+    if(day > 12) return `${yr}/${String(mon).padStart(2,"0")}`;
+    // Otherwise assume DD/MM/YYYY (Malaysian locale)
+    return `${yr}/${String(mon).padStart(2,"0")}`;
+  }
+  // Try parsing via Date object as fallback
+  try{
+    const d=new Date(dt);
+    if(!isNaN(d)) return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}`;
+  }catch(e){}
+  return null;
+}
+
+// Parse locale date string into a Date object
+function extractDateObj(dt){
+  if(!dt) return null;
+  // DD/MM/YYYY, HH:MM:SS
+  const m=dt.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m){
+    const day=parseInt(m[1]),mon=parseInt(m[2]),yr=parseInt(m[3]);
+    // Malaysian locale: DD/MM/YYYY
+    return new Date(yr, mon-1, day);
+  }
+  try{ const d=new Date(dt); if(!isNaN(d)) return d; }catch(e){}
+  return null;
+}
+
+function populateTransferFilters(log){
+  const fFrom=document.getElementById("filter-from");
+  const fTo=document.getElementById("filter-to");
+  const fBrand=document.getElementById("filter-brand");
+  const fLens=document.getElementById("filter-lens");
+  if(!fFrom||!fTo) return;
+
+  // Branches: always from BRANCHES array
+  const curFrom=fFrom.value, curTo=fTo.value;
+  fFrom.innerHTML=`<option value="">All branches</option>`+BRANCHES.map(v=>`<option value="${v}">${v}</option>`).join("");
+  fTo.innerHTML=`<option value="">All branches</option>`+BRANCHES.map(v=>`<option value="${v}">${v}</option>`).join("");
+  if(curFrom) fFrom.value=curFrom;
+  if(curTo) fTo.value=curTo;
+
+  // Brand: from log records
+  if(fBrand){
+    const brands=new Set(); log.forEach(r=>{ if(r.brand) brands.add(r.brand); });
+    const curBrand=fBrand.value;
+    fBrand.innerHTML=`<option value="">All brands</option>`+[...brands].sort().map(v=>`<option value="${v}">${v}</option>`).join("");
+    if(curBrand) fBrand.value=curBrand;
+  }
+
+  // Lens: filter by selected brand
+  updateFilterLens();
+}
+
+function updateFilterLens(){
+  const fBrand=document.getElementById("filter-brand");
+  const fLens=document.getElementById("filter-lens");
+  if(!fBrand||!fLens) return;
+  const selectedBrand=fBrand.value;
+  const log=loadLog();
+  const lenses=new Set();
+  log.forEach(r=>{
+    if(r.lens && (!selectedBrand || r.brand===selectedBrand)) lenses.add(r.lens);
+  });
+  const curLens=fLens.value;
+  fLens.innerHTML=`<option value="">All lenses</option>`+[...lenses].sort().map(v=>`<option value="${v}">${v}</option>`).join("");
+  if(curLens && [...lenses].includes(curLens)) fLens.value=curLens;
+}
+
+function clearTransferFilters(){
+  ["filter-from","filter-to","filter-brand","filter-lens","filter-date-from","filter-date-to"].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value="";
+  });
+  renderRecentTransfers();
+}
+
+async function doTransfer(){
+  const from=document.getElementById("tf-from").value, to=document.getElementById("tf-to").value;
+  const brand=document.getElementById("tf-brand").value, lens=document.getElementById("tf-lens").value;
+  const sph=document.getElementById("tf-sph").value, cyl=document.getElementById("tf-cyl").value;
+  const qty=parseInt(document.getElementById("tf-qty").value)||0;
+  const remark=document.getElementById("tf-remark").value.trim();
+  if(from===to){toast("From and To cannot be the same branch");return;}
+  if(qty<=0){toast("Quantity must be at least 1");return;}
+  const fromEntry=(db[from]||[]).find(e=>e.brand===brand&&e.desc===lens&&e.sph===sph&&e.cyl===cyl);
+  if(!fromEntry||fromEntry.qty<qty){toast(`Insufficient stock in ${from} (available: ${fromEntry?fromEntry.qty:0})`);return;}
+  fromEntry.qty-=qty; await save(from);
+  const log=loadLog();
+  const operator = (window._currentUser && window._currentUser.email) || "unknown";
+  log.unshift({id:uid(), dt:new Date().toLocaleString(),from,to,brand,lens,sph,cyl,qty,remark,operator});
+  saveLog(log);
+  toast(`✓ Transferred ${qty} × ${lens} SPH${sph} CYL${cyl} from ${from} to ${to}`);
+  document.getElementById("tf-qty").value=1; document.getElementById("tf-remark").value="";
+  renderRecentTransfers();
+}
+
+function confirmCancelTransfer(id){
+  const log=loadLog();
+  const r=log.find(x=>x.id===id);
+  if(!r){toast("Record not found");return;}
+  const cell=document.getElementById("tcancel-"+id);
+  if(!cell) return;
+  cell.innerHTML=`
+    <span style="font-size:11px;color:#c0392b;font-weight:600;white-space:nowrap;">Undo?</span>
+    <button onclick="cancelTransfer('${id}')" style="margin-left:4px;background:#c0392b;color:#fff;border:none;border-radius:6px;padding:2px 8px;font-size:12px;cursor:pointer;">Yes</button>
+    <button onclick="renderRecentTransfers()" style="margin-left:3px;background:none;border:1px solid #ddd;border-radius:6px;padding:2px 6px;font-size:12px;cursor:pointer;">No</button>`;
+}
+
+async function cancelTransfer(id){
+  const log=loadLog();
+  const idx=log.findIndex(x=>x.id===id);
+  if(idx===-1){toast("Record not found");return;}
+  const r=log[idx];
+  // Return qty to From branch
+  const fromEntry=(db[r.from]||[]).find(e=>e.brand===r.brand&&e.desc===r.lens&&e.sph===r.sph&&e.cyl===r.cyl);
+  if(fromEntry){
+    fromEntry.qty+=r.qty;
+    await save(r.from);
+  }
+  // Remove from log
+  log.splice(idx,1);
+  saveLog(log);
+  const canceller = (window._currentUser && window._currentUser.email) || "unknown";
+  toast(`↩ Transfer undone by ${canceller} — ${r.qty} × ${r.lens} returned to ${r.from}`);
+  renderRecentTransfers();
+}
+
+// ── Toast ──────────────────────────────────────
+function toast(msg){
+  const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),2500);
+}
+
+// ═══════════════════════════════════════════════
+//  MODAL MANAGER
+// ═══════════════════════════════════════════════
+let modalMode=null, modalBranch=null, modalBrand=null;
+const PROTECTED_BRANCHES_LIST=["HQ"];
+
+// openModalBranch — called from branch tab ＋/－ (no arg = branch management)
+function openModalBranch(){
+  modalMode="branch"; modalBranch=null; modalBrand=null;
+  document.getElementById("modal-title").textContent="Manage Branches";
+  document.getElementById("modal-sub").textContent="Add or remove branches. HQ is protected.";
+  document.getElementById("modal-input").placeholder="e.g. SETIA ALAM";
+  document.getElementById("modal-lens-row").style.display="none";
+  renderModalList();
+  document.getElementById("modal-overlay").classList.add("show");
+}
+
+// openModalBrand — called with specific branch context
+function openModalBrand(branch){
+  modalMode="brand"; modalBranch=branch; modalBrand=null;
+  document.getElementById("modal-title").textContent=`Manage Brands — ${branch}`;
+  document.getElementById("modal-sub").textContent="Add new brands or remove custom ones. Default brands are protected.";
+  document.getElementById("modal-input").placeholder="e.g. ZEISS";
+  document.getElementById("modal-lens-row").style.display="";
+  document.getElementById("modal-lens-input").value="";
+  renderModalList();
+  document.getElementById("modal-overlay").classList.add("show");
+}
+
+// openModalLens — called with specific branch + brand
+function openModalLens(branch, brand){
+  modalMode="lens"; modalBranch=branch; modalBrand=brand;
+  document.getElementById("modal-title").textContent=`Manage Lenses — ${brand} (${branch})`;
+  document.getElementById("modal-sub").textContent="Add new lens types or remove existing ones.";
+  document.getElementById("modal-input").placeholder="e.g. 1.74 UVNEX";
+  document.getElementById("modal-lens-row").style.display="none";
+  renderModalList();
+  document.getElementById("modal-overlay").classList.add("show");
+}
+
+function closeModal(){
+  document.getElementById("modal-overlay").classList.remove("show");
+  document.getElementById("modal-input").value="";
+  modalMode=null; modalBranch=null; modalBrand=null;
+  renderAll();
+}
+
+function renderModalList(){
+  const ul=document.getElementById("modal-list"); ul.innerHTML="";
+  let items=[], protected_=[];
+  if(modalMode==="branch"){ items=[...BRANCHES]; protected_=PROTECTED_BRANCHES_LIST; }
+  else if(modalMode==="brand"){ items=[...getBranchBrands(modalBranch)]; protected_=getProtectedBrands(modalBranch); }
+  else if(modalMode==="lens"){ items=[...getBranchLensOrder(modalBranch,modalBrand)]; protected_=[]; }
+
+  items.forEach(item=>{
+    const isProtected=protected_.includes(item);
+    const li=document.createElement("li");
+    li.className=isProtected?"protected":"";
+    const span=document.createElement("span");
+    span.innerHTML=item+(isProtected?' <span style="font-size:11px;color:#bbb;">(protected)</span>':"");
+    li.appendChild(span);
+    if(!isProtected){
+      const btn=document.createElement("button"); btn.className="btn-remove"; btn.textContent="－ Remove";
+      btn.onclick=()=>{
+        li.innerHTML="";
+        const msg=document.createElement("span"); msg.style.cssText="font-size:12px;color:#c0392b;font-weight:600;"; msg.textContent=`Remove "${item}"?`;
+        const yes=document.createElement("button"); yes.className="btn-remove";
+        yes.style.cssText="margin-left:8px;background:#c0392b;color:#fff;border-color:#c0392b;"; yes.textContent="Yes, remove";
+        yes.onclick=()=>modalRemoveItem(item);
+        const no=document.createElement("button"); no.className="btn-remove"; no.style.cssText="margin-left:4px;"; no.textContent="Cancel";
+        no.onclick=()=>renderModalList();
+        li.appendChild(msg); li.appendChild(yes); li.appendChild(no);
+      };
+      li.appendChild(btn);
+    }
+    ul.appendChild(li);
+  });
+}
+
+async function modalAddItem(){
+  const val=document.getElementById("modal-input").value.trim().toUpperCase();
+  if(!val){toast("Please enter a name");return;}
+
+  if(modalMode==="branch"){
+    if(BRANCHES.includes(val)){toast("Branch already exists");return;}
+    BRANCHES.push(val);
+    branchConfig[val]=JSON.parse(JSON.stringify(DEFAULT_NON_HQ));
+    db[val]=sampleData(val);
+    await save(val); await saveConfig(); renderAll();
+    toast(`Branch "${val}" added ✓`);
+
+  } else if(modalMode==="brand"){
+    const brands=getBranchBrands(modalBranch);
+    if(brands.includes(val)){toast("Brand already exists in this branch");return;}
+    const lensVal=document.getElementById("modal-lens-input").value.trim().toUpperCase();
+    if(!lensVal){
+      document.getElementById("modal-lens-input").style.borderColor="#c0392b";
+      document.getElementById("modal-lens-input").focus();
+      toast("Please enter at least one lens name"); return;
+    }
+    document.getElementById("modal-lens-input").style.borderColor="";
+    brands.push(val);
+    setBranchLensOrder(modalBranch, val, [lensVal]);
+    // Add entries for this branch only
+    sampleLensEntries(modalBranch, val, lensVal).forEach(e=>db[modalBranch].push(e));
+    await save(modalBranch); await saveConfig();
+    activeBranchBrand=val;
+    document.getElementById("modal-lens-input").value="";
+    renderAll(); renderModalList();
+    toast(`Brand "${val}" added to ${modalBranch} ✓`);
+
+  } else if(modalMode==="lens"){
+    const order=getBranchLensOrder(modalBranch, modalBrand);
+    if(order.includes(val)){toast("Lens already exists");return;}
+    order.push(val);
+    setBranchLensOrder(modalBranch, modalBrand, order);
+    sampleLensEntries(modalBranch, modalBrand, val).forEach(e=>db[modalBranch].push(e));
+    await save(modalBranch); await saveConfig();
+    renderAll(); renderModalList();
+    toast(`Lens "${val}" added to ${modalBrand} (${modalBranch}) ✓`);
+  }
+  document.getElementById("modal-input").value="";
+}
+
+async function modalRemoveItem(item){
+  if(modalMode==="branch"){
+    if(PROTECTED_BRANCHES_LIST.includes(item)){toast("Cannot remove protected branch");return;}
+    const hasStock=(db[item]||[]).some(e=>e.qty>0);
+    if(hasStock){
+      const total=(db[item]||[]).reduce((s,e)=>s+e.qty,0);
+      showStockWarning(`Cannot remove branch "${item}"`,`This branch still has <strong>${total} units</strong>.<br>Clear all inventory to 0 before removing.`); return;
+    }
+    BRANCHES=BRANCHES.filter(b=>b!==item);
+    delete branchConfig[item]; delete db[item];
+    try{ await fbRemove("branches/"+item.replace(/\s/g,"_")); }catch(e){}
+    if(activePanel===item){activePanel="overview";activeBranch=null;}
+    await saveConfig(); renderAll(); renderModalList();
+    toast(`Branch "${item}" removed`);
+
+  } else if(modalMode==="brand"){
+    if(getProtectedBrands(modalBranch).includes(item)){toast("Cannot remove protected brand");return;}
+    const hasStock=(db[modalBranch]||[]).some(e=>e.brand===item&&e.qty>0);
+    if(hasStock){
+      const total=(db[modalBranch]||[]).filter(e=>e.brand===item).reduce((s,e)=>s+e.qty,0);
+      showStockWarning(`Cannot remove brand "${item}"`,`Still has <strong>${total} units</strong> in ${modalBranch}.<br>Clear inventory to 0 first.`); return;
+    }
+    const cfg=getBranchConfig(modalBranch);
+    cfg.brands=cfg.brands.filter(b=>b!==item);
+    delete cfg.lensOrders[item];
+    db[modalBranch]=(db[modalBranch]||[]).filter(e=>e.brand!==item);
+    await save(modalBranch); await saveConfig();
+    if(activeBranchBrand===item) activeBranchBrand=cfg.brands[0]||null;
+    renderAll(); renderModalList();
+    toast(`Brand "${item}" removed from ${modalBranch}`);
+
+  } else if(modalMode==="lens"){
+    const order=getBranchLensOrder(modalBranch, modalBrand);
+    if(order.length<=1){toast("Must keep at least one lens type");return;}
+    const hasStock=(db[modalBranch]||[]).some(e=>e.brand===modalBrand&&e.desc===item&&e.qty>0);
+    if(hasStock){
+      const total=(db[modalBranch]||[]).filter(e=>e.brand===modalBrand&&e.desc===item).reduce((s,e)=>s+e.qty,0);
+      showStockWarning(`Cannot remove lens "${item}"`,`Still has <strong>${total} units</strong> in ${modalBranch}.<br>Clear inventory to 0 first.`); return;
+    }
+    setBranchLensOrder(modalBranch, modalBrand, order.filter(l=>l!==item));
+    db[modalBranch]=(db[modalBranch]||[]).filter(e=>!(e.brand===modalBrand&&e.desc===item));
+    await save(modalBranch); await saveConfig();
+    const k=lensKey(modalBranch,modalBrand);
+    if(activeLensPerBrand[k]===item) activeLensPerBrand[k]=getBranchLensOrder(modalBranch,modalBrand)[0]||"";
+    renderAll(); renderModalList();
+    toast(`Lens "${item}" removed from ${modalBrand} (${modalBranch})`);
+  }
+}
+
+function showStockWarning(title, msg){
+  renderModalList();
+  const ul=document.getElementById("modal-list");
+  const warn=document.createElement("li");
+  warn.style.cssText="background:#fff8f0;border:1px solid #ffd699;border-radius:8px;margin:4px;padding:10px 12px;display:block;color:#c0392b;font-size:12px;line-height:1.6;";
+  warn.innerHTML=`<strong>⚠ ${title}</strong><br>${msg}`;
+  ul.insertBefore(warn, ul.firstChild);
+}
+
+document.getElementById("modal-overlay").addEventListener("click",function(e){if(e.target===this)closeModal();});
+document.getElementById("modal-input").addEventListener("keydown",function(e){if(e.key==="Enter")modalAddItem();});
+document.getElementById("modal-lens-input").addEventListener("keydown",function(e){if(e.key==="Enter")modalAddItem();});
+
+// ── Branch Breakdown ───────────────────────────
+function openBreakdown(brand, desc, sph, cyl){
+  // Collect qty per branch for this brand+desc+sph+cyl
+  const rows = BRANCHES.map(b=>{
+    const e=(db[b]||[]).find(x=>x.brand===brand&&x.desc===desc&&x.sph===sph&&x.cyl===cyl);
+    return { branch:b, qty:e?e.qty:null }; // null = branch doesn't carry this lens
+  }).filter(r=>r.qty!==null); // only show branches that have this lens configured
+
+  document.getElementById("breakdown-title").textContent=`${desc}`;
+  document.getElementById("breakdown-sub").innerHTML=
+    `<span style="color:#888;">SPH <strong>${sph}</strong> &nbsp;|&nbsp; CYL <strong>${cyl}</strong> &nbsp;|&nbsp; ${brand}</span>`;
+
+  const total=rows.reduce((s,r)=>s+r.qty,0);
+  document.getElementById("breakdown-body").innerHTML=`
+    ${rows.map(r=>{
+      const cls = r.qty===0?"zero":r.qty<=CRIT_T?"critical":r.qty<=LOW_T?"low":"";
+      return `<div class="breakdown-row">
+        <span class="breakdown-branch">${r.branch}</span>
+        <span class="breakdown-qty ${cls}">${r.qty>0?r.qty:"—"}</span>
+      </div>`;
+    }).join("")}
+    <div class="breakdown-row" style="margin-top:6px;border-top:2px solid #e0e0e0;padding-top:8px;">
+      <span style="font-weight:700;font-size:13px;">TOTAL</span>
+      <span class="breakdown-qty" style="color:#1a1a1a;">${total}</span>
+    </div>`;
+  document.getElementById("breakdown-overlay").classList.add("show");
+}
+document.getElementById("breakdown-overlay").addEventListener("click",function(e){if(e.target===this)this.classList.remove("show");});
+
+// ── Init ───────────────────────────────────────
+// Expose functions to window for inline onclick handlers
+window.openEdit = openEdit;
+window.confirmEdit = confirmEdit;
+window.closeEditModal = closeEditModal;
+window.addEntry = addEntry;
+window.exportCSV = exportCSV;
+window.doTransfer = doTransfer;
+window.updateTfBrand = updateTfBrand;
+window.updateTfLens = updateTfLens;
+window.confirmCancelTransfer = confirmCancelTransfer;
+window.cancelTransfer = cancelTransfer;
+window.renderRecentTransfers = renderRecentTransfers;
+window.clearTransferFilters = clearTransferFilters;
+window.updateFilterLens = updateFilterLens;
+window.openModalBranch = openModalBranch;
+window.openModalBrand = openModalBrand;
+window.openModalLens = openModalLens;
+window.closeModal = closeModal;
+window.modalAddItem = modalAddItem;
+window.modalRemoveItem = modalRemoveItem;
+window.openBreakdown = openBreakdown;
+
+async function runApp(){
+  showLoading("Connecting to database...");
+  await load();
+  await loadLogAsync();
+  renderAll();
+}
+
+// ── Auth flow ──
+onAuthStateChanged(firebaseAuth, async (user)=>{
+  const loginScreen = document.getElementById("login-screen");
+  const appContainer = document.getElementById("app-container");
+  const userInfo = document.getElementById("user-info");
+
+  if(user && isAllowed(user.email)){
+    window._currentUser = user; // Store for transfer tracking
+    loginScreen.style.display = "none";
+    appContainer.style.display = "";
+    userInfo.innerHTML = `
+      <img src="${user.photoURL||''}" referrerpolicy="no-referrer" style="width:24px;height:24px;border-radius:50%;vertical-align:middle;margin-right:6px;" onerror="this.style.display='none'">
+      <span style="font-size:12px;color:#555;">${user.email}</span>
+      <button onclick="doLogout()" style="margin-left:10px;padding:3px 10px;background:#f0f0f0;border:1px solid #ddd;border-radius:6px;font-size:11px;cursor:pointer;color:#555;">Logout</button>
+    `;
+    await runApp();
+  } else if(user && !isAllowed(user.email)){
+    // Signed in but not allowed
+    loginScreen.style.display = "flex";
+    appContainer.style.display = "none";
+    document.getElementById("login-error").textContent = `❌ ${user.email} is not authorized.`;
+    await signOut(firebaseAuth);
+  } else {
+    // Not signed in
+    loginScreen.style.display = "flex";
+    appContainer.style.display = "none";
+  }
+});
+</script>
+</div>
+</body>
+</html>
